@@ -1,31 +1,31 @@
-// A working bring-the-humans-03 entry (Node 22, standard library only): it copies VIDEO.json from the repository root
-// to /output/VIDEO.json, where the gate reads it. That is all the program has to do. The entry is the video itself:
-// your agent makes an original short vertical ad for make.fun, the ad is posted publicly on TikTok from a public account
-// with the bounty's line and your play code in its caption (or the code in the account's bio), VIDEO.json names the
-// video, and the house reads the video's views from TikTok. Nothing this program writes about the video is scored.
+// main.ts — the whole program for the bring-the-humans-03 entry.
 //
-// The ad shows make.fun's brand badge (the mascot mark and the make.fun wordmark) from its first frame and ends on
-// make.fun's referral end card with your own referral code in its field, both from make.fun's press pack and used as
-// they are, as is every make.fun mark, wordmark or colour in it: https://make.fun/press/manifest.json lists the files
-// and https://make.fun/press/llms.txt is the guide for agents. Fetch them when you make the ad; this repository holds
-// no copy of them. No check reads the video for them: make.fun's admins may disqualify a video without them.
-//
-// The VIDEO.json this starter ships holds a placeholder address, so the gate refuses it as it stands (valid 0).
-// Replace it with your video's address before you submit.
-//
-// Outside the grader's container, MAKEFUN_BOT_DIR and MAKEFUN_OUTPUT_DIR stand in for /bot and /output:
-//   mkdir -p out && MAKEFUN_BOT_DIR=. MAKEFUN_OUTPUT_DIR=out node main.ts
+// The entry itself is the TikTok video; this repository only hands in its
+// address, which lives in VIDEO.json at the repository root. The grader
+// runs this program with MAKEFUN_BOT_DIR pointing at the repository and
+// MAKEFUN_OUTPUT_DIR at the folder that receives the hand-in, and expects
+// VIDEO.json to arrive there exactly as committed — so the job here is a
+// single faithful copy, nothing more.
 
-import { copyFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { copyFileSync, mkdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 
-const BOT_DIR = process.env.MAKEFUN_BOT_DIR ?? '/bot';
-const OUTPUT_DIR = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+const repositoryDir = process.env.MAKEFUN_BOT_DIR ?? ".";
+const outputDir = process.env.MAKEFUN_OUTPUT_DIR ?? "out";
 
-mkdirSync(OUTPUT_DIR, { recursive: true });
-try {
-  copyFileSync(join(BOT_DIR, 'VIDEO.json'), join(OUTPUT_DIR, 'VIDEO.json'));
-} catch (err) {
-  console.error(`VIDEO.json could not be copied from ${BOT_DIR}: ${(err as Error).message}`);
-  process.exit(1);
+// The output folder is not promised to exist, so make it (and any parents)
+// first; recursive mkdir is a no-op when it is already there.
+mkdirSync(outputDir, { recursive: true });
+
+const sourcePath = join(repositoryDir, "VIDEO.json");
+const handedInPath = join(outputDir, "VIDEO.json");
+
+// copyFileSync moves the raw bytes without parsing or re-encoding, which
+// keeps the address the house reads identical to the one in the repository.
+copyFileSync(sourcePath, handedInPath);
+
+// A cheap guard against a truncated copy: the handed-in file must be
+// exactly as large as the committed one, or something went wrong mid-copy.
+if (statSync(handedInPath).size !== statSync(sourcePath).size) {
+  throw new Error("VIDEO.json copy is incomplete: size mismatch after copy");
 }
